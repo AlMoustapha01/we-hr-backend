@@ -1,0 +1,75 @@
+services:
+  wehr_database:
+    container_name: 'wehr_database'
+    image: postgres:16-alpine
+    shm_size: 128mb
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - '${POSTGRES_PORT}:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  wehr_app:
+    container_name: 'wehr_app'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '${APP_PORT}:${APP_PORT}'
+    depends_on:
+      wehr_database:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      - NODE_ENV=production
+
+  wehr_app_dev:
+    container_name: 'wehr_app_dev'
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - '${APP_PORT}:3000'
+    volumes:
+      # Mount source code for hot-reload
+      - ./src:/app/src
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.build.json:/app/tsconfig.build.json
+      - ./nest-cli.json:/app/nest-cli.json
+      # Prevent node_modules from being overwritten
+      - /app/node_modules
+    depends_on:
+      wehr_database:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=development
+    # Enable TTY for better logging
+    tty: true
+    stdin_open: true
+
+  adminer:
+    container_name: 'wehr_adminer'
+    image: adminer:latest
+    ports:
+      - '8080:8080'
+    depends_on:
+      wehr_database:
+        condition: service_healthy
+    environment:
+      - ADMINER_DEFAULT_SERVER=wehr_database
+      - ADMINER_DESIGN=nette
+
+volumes:
+  pgdata:

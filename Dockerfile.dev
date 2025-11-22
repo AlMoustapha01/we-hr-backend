@@ -1,0 +1,24 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install bash and curl for debugging
+RUN apk add --no-cache bash curl
+
+# Copy package files
+COPY package.json pnpm-lock.yaml* ./
+
+# Install dependencies
+RUN corepack enable pnpm && pnpm i
+
+# Copy source code
+COPY . .
+
+# Expose the port
+EXPOSE 3000
+
+# Script pour attendre la base de données et lancer l'application
+RUN chmod +x docker-entrypoint-dev.sh
+
+# Run in development mode with hot-reload
+CMD ["./docker-entrypoint-dev.sh"]
