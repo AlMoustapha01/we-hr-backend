@@ -52,6 +52,11 @@ export class EmployeeEntity extends AggregateRoot<EmployeeProps> {
   }
 
   // Business logic methods
+  updateName(name: string): void {
+    this.props.name = name;
+    this.validate();
+  }
+
   updateContactInfo(email: string, phone: string): void {
     this.props.email = email;
     this.props.phone = phone;

@@ -341,26 +341,27 @@ export class DepartmentController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete a department' })
   @ApiOkResponse({
     description: 'Department deleted successfully',
+    type: IdResponse,
   })
   @ApiResponse({ status: 404, description: 'Department not found' })
   @ApiResponse({ status: 409, description: 'Department has employees' })
   async delete(
     @Param('id', ParseUUIDPipe) departmentId: string,
-  ): Promise<void> {
+  ): Promise<IdResponse> {
     const command = new DeleteDepartmentCommand({
       departmentId,
     });
 
-    const result: Result<boolean, Error> =
+    const result: Result<AggregateID, Error> =
       await this.deleteDepartmentHandler.execute(command);
 
-    match(result, {
-      Ok: () => {
-        return;
+    return match(result, {
+      Ok: (id: AggregateID) => {
+        return new IdResponse(id);
       },
       Err: (error: Error) => {
         if (error instanceof DepartmentNotFoundError)

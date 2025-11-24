@@ -302,24 +302,27 @@ export class EmployeeController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Delete an employee' })
   @ApiOkResponse({
     description: 'Employee deleted successfully',
+    type: IdResponse,
   })
   @ApiResponse({ status: 404, description: 'Employee not found' })
   @ApiResponse({ status: 409, description: 'Employee is managing departments' })
-  async delete(@Param('id', ParseUUIDPipe) employeeId: string): Promise<void> {
+  async delete(
+    @Param('id', ParseUUIDPipe) employeeId: string,
+  ): Promise<IdResponse> {
     const command = new DeleteEmployeeCommand({
       employeeId,
     });
 
-    const result: Result<boolean, Error> =
+    const result: Result<AggregateID, Error> =
       await this.deleteEmployeeHandler.execute(command);
 
-    match(result, {
-      Ok: () => {
-        return;
+    return match(result, {
+      Ok: (id: AggregateID) => {
+        return new IdResponse(id);
       },
       Err: (error: Error) => {
         if (error instanceof EmployeeIsManagerError)

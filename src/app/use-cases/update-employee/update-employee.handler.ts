@@ -42,6 +42,11 @@ export class UpdateEmployeeHandler {
     const employee = employeeOption.unwrap();
     const employeeProps = employee.getProps();
 
+    // Update name if provided
+    if (command.name !== undefined) {
+      employee.updateName(command.name);
+    }
+
     // Update email if provided and different
     if (command.email !== undefined && command.email !== employeeProps.email) {
       // Check if new email already exists

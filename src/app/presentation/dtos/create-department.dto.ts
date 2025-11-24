@@ -33,7 +33,7 @@ export class CreateDepartmentDto {
     required: false,
     nullable: true,
   })
-  @IsUUID()
   @IsOptional()
+  @IsUUID()
   readonly managerId?: string;
 }

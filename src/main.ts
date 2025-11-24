@@ -16,7 +16,6 @@ async function bootstrap() {
 
   const app = await NestFactory.create(AppModule);
 
-  // Configure Express to use qs for parsing nested query parameters
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const expressApp = app.getHttpAdapter().getInstance();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -61,13 +60,32 @@ async function bootstrap() {
     origin: corsOrigin.split(','),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders:
-      'Content-Type,Authorization,Accept,Origin,X-Requested-With,Cookie,Set-Cookie,clerk-session-token,clerk-session-id,x-clerk-auth-token,x-clerk-auth-status',
+      'Content-Type,Authorization,Accept,Origin,X-Requested-With,Cookie,Set-Cookie',
     exposedHeaders: 'Authorization,Set-Cookie',
     credentials: true,
   });
 
   // security
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: {
+        directives: {
+          imgSrc: [`'self'`, 'data:'],
+          scriptSrc: [`'self'`, `https: 'unsafe-inline'`],
+          manifestSrc: [`'self'`],
+          frameSrc: [`'self'`],
+        },
+      },
+      xXssProtection: true,
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+      noSniff: true,
+    }),
+  );
 
   // Configure cookie parser
   app.use(cookieParser());

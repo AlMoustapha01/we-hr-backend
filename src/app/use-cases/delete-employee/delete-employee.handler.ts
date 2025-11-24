@@ -9,6 +9,7 @@ import {
   EMPLOYEE_REPOSITORY,
 } from '@/app/app.di-tokens';
 import { ConflictException } from '@/libs/exceptions';
+import { AggregateID } from '@/libs/domain';
 
 export class EmployeeIsManagerError extends Error {
   constructor(public readonly departmentCount: number) {
@@ -32,7 +33,7 @@ export class DeleteEmployeeHandler {
 
   async execute(
     command: DeleteEmployeeCommand,
-  ): Promise<Result<boolean, Error>> {
+  ): Promise<Result<AggregateID, Error>> {
     this.logger.log(`Deleting employee: ${command.employeeId}`);
 
     // Check if employee exists
@@ -62,7 +63,7 @@ export class DeleteEmployeeHandler {
 
       this.logger.log(`Employee deleted successfully: ${employee.id}`);
 
-      return Ok(true);
+      return Ok(employee.id);
     } catch (error: any) {
       if (error instanceof ConflictException) {
         return Err(new EmployeeIsManagerError(0));
