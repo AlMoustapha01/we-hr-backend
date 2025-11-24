@@ -14,6 +14,7 @@ import {
   NotFoundException,
   Inject,
 } from '@nestjs/common';
+import { parseFilters } from '@/libs/api/filter.parser';
 import {
   ApiTags,
   ApiOperation,
@@ -147,49 +148,13 @@ export class EmployeeController {
   async findPaginated(
     @Query() query: EmployeePaginatedQueryDto,
   ): Promise<EmployeePaginatedResponseDto> {
-    const {
-      limit,
-      page,
-      orderBy,
-      orderDirection,
-      name,
-      status,
-      position,
-      departmentId,
-    } = query;
+    const { limit, page, orderBy, orderDirection, filters } = query;
 
     const filterBy: any[] = [];
 
-    if (name) {
-      filterBy.push({
-        field: 'name',
-        operator: 'EQUALS',
-        value: name,
-      });
-    }
-
-    if (status) {
-      filterBy.push({
-        field: 'status',
-        operator: 'EQUALS',
-        value: status,
-      });
-    }
-
-    if (position) {
-      filterBy.push({
-        field: 'position',
-        operator: 'EQUALS',
-        value: position,
-      });
-    }
-
-    if (departmentId) {
-      filterBy.push({
-        field: 'departmentId',
-        operator: 'EQUALS',
-        value: departmentId,
-      });
+    if (filters && Object.keys(filters).length > 0) {
+      const parsedFilters = parseFilters(filters);
+      filterBy.push(...parsedFilters);
     }
 
     const params = {

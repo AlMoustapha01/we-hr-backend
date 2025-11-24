@@ -9,8 +9,20 @@ import { Option } from 'oxide.ts';
 
 export enum Operator {
   EQUALS = 'EQUALS',
-  BETWEEN = 'BETWEEN',
+  NOT_EQUALS = 'NOT_EQUALS',
   IN = 'IN',
+  NOT_IN = 'NOT_IN',
+  BETWEEN = 'BETWEEN',
+  LESS_THAN = 'LESS_THAN',
+  LESS_THAN_OR_EQUAL = 'LESS_THAN_OR_EQUAL',
+  GREATER_THAN = 'GREATER_THAN',
+  GREATER_THAN_OR_EQUAL = 'GREATER_THAN_OR_EQUAL',
+  CONTAINS = 'CONTAINS',
+  NOT_CONTAINS = 'NOT_CONTAINS',
+  STARTS_WITH = 'STARTS_WITH',
+  ENDS_WITH = 'ENDS_WITH',
+  NULL = 'NULL',
+  NOT_NULL = 'NOT_NULL',
 }
 
 export class Paginated<T> {

@@ -40,3 +40,14 @@ export class EmployeeNotEligibleForManagerError extends ExceptionBase {
     super(EmployeeNotEligibleForManagerError.message, cause, metadata);
   }
 }
+
+export class AssignmentNotFoundError extends ExceptionBase {
+  static readonly message =
+    'No active assignment found for this employee in this department';
+
+  public readonly code = 'DEPARTMENT.ASSIGNMENT_NOT_FOUND';
+
+  constructor(cause?: Error, metadata?: unknown) {
+    super(AssignmentNotFoundError.message, cause, metadata);
+  }
+}

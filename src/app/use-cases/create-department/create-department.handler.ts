@@ -3,11 +3,13 @@ import { CreateDepartmentCommand } from './create-department.command';
 import { DepartmentRepositoryPort } from '@/app/domain/department.repository.port';
 import { DepartmentEntity } from '@/app/domain/department';
 import { EmployeeRepositoryPort } from '@/app/domain/employee.repository.port';
+import { DepartmentDomainService } from '@/app/domain/department.domain-service';
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateID } from '@/libs/domain';
 import {
   DepartmentAlreadyExistsError,
   ManagerNotFoundError,
+  EmployeeNotEligibleForManagerError,
 } from '@/app/domain/department.errors';
 import { ConflictException } from '@/libs/exceptions';
 import {
@@ -24,6 +26,7 @@ export class CreateDepartmentHandler {
     private readonly departmentRepository: DepartmentRepositoryPort,
     @Inject(EMPLOYEE_REPOSITORY)
     private readonly employeeRepository: EmployeeRepositoryPort,
+    private readonly departmentDomainService: DepartmentDomainService,
   ) {}
 
   async execute(
@@ -33,13 +36,24 @@ export class CreateDepartmentHandler {
       `Creating department: ${command.name} with manager: ${command.managerId ?? 'none'}`,
     );
 
-    // Check if manager exists (only if managerId is provided)
+    // Check if manager exists and is eligible (only if managerId is provided)
     if (command.managerId) {
-      const manager = await this.employeeRepository.findOneById(
+      const managerOption = await this.employeeRepository.findOneById(
         command.managerId,
       );
-      if (manager.isNone()) {
+      if (managerOption.isNone()) {
         return Err(new ManagerNotFoundError());
+      }
+
+      // Validate manager eligibility
+      const manager = managerOption.unwrap();
+      try {
+        this.departmentDomainService.validateManagerEligibility(manager);
+      } catch (error) {
+        if (error instanceof EmployeeNotEligibleForManagerError) {
+          return Err(error);
+        }
+        throw error;
       }
     }
 

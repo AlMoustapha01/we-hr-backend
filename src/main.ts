@@ -9,13 +9,36 @@ import { AllConfigType } from './config/config.type';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import { parse as qsParse } from 'qs';
 
 async function bootstrap() {
   initializeTransactionalContext();
 
   const app = await NestFactory.create(AppModule);
+
+  // Configure Express to use qs for parsing nested query parameters
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+  const expressApp = app.getHttpAdapter().getInstance();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  expressApp.set('query parser', (str: string) =>
+    qsParse(str, {
+      depth: 10,
+      arrayLimit: 100,
+      parseArrays: true,
+      allowDots: false,
+    }),
+  );
+
   useContainer(app.select(AppModule), { fallbackOnErrors: true });
-  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
 
   const configService = app.get(ConfigService<AllConfigType>);
 

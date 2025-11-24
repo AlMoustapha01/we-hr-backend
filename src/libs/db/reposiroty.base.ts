@@ -128,54 +128,146 @@ export abstract class RepositoryBase<
       params.filterBy.forEach((filter, index) => {
         const paramKey = `filter${index}`;
         const whereMethod = index === 0 ? 'where' : 'andWhere';
+        const fieldPath = `${this.tableName}.${String(filter.field)}`;
 
-        if (
-          filter.operator === Operator.EQUALS ||
-          filter.operator === Operator.IN
-        ) {
-          query[whereMethod](
-            `${this.tableName}.${String(filter.field)} IN (:...${paramKey})`,
-            {
+        switch (filter.operator) {
+          case Operator.EQUALS:
+          case Operator.IN:
+            query[whereMethod](`${fieldPath} IN (:...${paramKey})`, {
               [paramKey]: Array.isArray(filter.value)
                 ? filter.value
                 : [filter.value],
-            },
-          );
-
-          countQuery[whereMethod](
-            `${this.tableName}.${String(filter.field)} IN (:...${paramKey})`,
-            {
+            });
+            countQuery[whereMethod](`${fieldPath} IN (:...${paramKey})`, {
               [paramKey]: Array.isArray(filter.value)
                 ? filter.value
                 : [filter.value],
-            },
-          );
-        } else if (filter.operator === Operator.BETWEEN) {
-          // Handle BETWEEN operator with proper syntax
-          if (!Array.isArray(filter.value) || filter.value.length !== 2) {
-            throw new Error(
-              'BETWEEN operator requires an array with exactly 2 values',
+            });
+            break;
+
+          case Operator.NOT_EQUALS:
+          case Operator.NOT_IN:
+            query[whereMethod](`${fieldPath} NOT IN (:...${paramKey})`, {
+              [paramKey]: Array.isArray(filter.value)
+                ? filter.value
+                : [filter.value],
+            });
+            countQuery[whereMethod](`${fieldPath} NOT IN (:...${paramKey})`, {
+              [paramKey]: Array.isArray(filter.value)
+                ? filter.value
+                : [filter.value],
+            });
+            break;
+
+          case Operator.LESS_THAN:
+            query[whereMethod](`${fieldPath} < :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            countQuery[whereMethod](`${fieldPath} < :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            break;
+
+          case Operator.LESS_THAN_OR_EQUAL:
+            query[whereMethod](`${fieldPath} <= :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            countQuery[whereMethod](`${fieldPath} <= :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            break;
+
+          case Operator.GREATER_THAN:
+            query[whereMethod](`${fieldPath} > :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            countQuery[whereMethod](`${fieldPath} > :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            break;
+
+          case Operator.GREATER_THAN_OR_EQUAL:
+            query[whereMethod](`${fieldPath} >= :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            countQuery[whereMethod](`${fieldPath} >= :${paramKey}`, {
+              [paramKey]: filter.value,
+            });
+            break;
+
+          case Operator.CONTAINS:
+            query[whereMethod](`${fieldPath} LIKE :${paramKey}`, {
+              [paramKey]: `%${String(filter.value)}%`,
+            });
+            countQuery[whereMethod](`${fieldPath} LIKE :${paramKey}`, {
+              [paramKey]: `%${String(filter.value)}%`,
+            });
+            break;
+
+          case Operator.NOT_CONTAINS:
+            query[whereMethod](`${fieldPath} NOT LIKE :${paramKey}`, {
+              [paramKey]: `%${String(filter.value)}%`,
+            });
+            countQuery[whereMethod](`${fieldPath} NOT LIKE :${paramKey}`, {
+              [paramKey]: `%${String(filter.value)}%`,
+            });
+            break;
+
+          case Operator.STARTS_WITH:
+            query[whereMethod](`${fieldPath} LIKE :${paramKey}`, {
+              [paramKey]: `${String(filter.value)}%`,
+            });
+            countQuery[whereMethod](`${fieldPath} LIKE :${paramKey}`, {
+              [paramKey]: `${String(filter.value)}%`,
+            });
+            break;
+
+          case Operator.ENDS_WITH:
+            query[whereMethod](`${fieldPath} LIKE :${paramKey}`, {
+              [paramKey]: `%${String(filter.value)}`,
+            });
+            countQuery[whereMethod](`${fieldPath} LIKE :${paramKey}`, {
+              [paramKey]: `%${String(filter.value)}`,
+            });
+            break;
+
+          case Operator.NULL:
+            query[whereMethod](`${fieldPath} IS NULL`);
+            countQuery[whereMethod](`${fieldPath} IS NULL`);
+            break;
+
+          case Operator.NOT_NULL:
+            query[whereMethod](`${fieldPath} IS NOT NULL`);
+            countQuery[whereMethod](`${fieldPath} IS NOT NULL`);
+            break;
+
+          case Operator.BETWEEN: {
+            if (!Array.isArray(filter.value) || filter.value.length !== 2) {
+              throw new Error(
+                'BETWEEN operator requires an array with exactly 2 values',
+              );
+            }
+            const startParam = `${paramKey}Start`;
+            const endParam = `${paramKey}End`;
+            query[whereMethod](
+              `${fieldPath} BETWEEN :${startParam} AND :${endParam}`,
+              {
+                [startParam]: filter.value[0],
+                [endParam]: filter.value[1],
+              },
             );
+            countQuery[whereMethod](
+              `${fieldPath} BETWEEN :${startParam} AND :${endParam}`,
+              {
+                [startParam]: filter.value[0],
+                [endParam]: filter.value[1],
+              },
+            );
+            break;
           }
 
-          const startParam = `${paramKey}Start`;
-          const endParam = `${paramKey}End`;
-
-          query[whereMethod](
-            `${this.tableName}.${String(filter.field)} BETWEEN :${startParam} AND :${endParam}`,
-            {
-              [startParam]: filter.value[0],
-              [endParam]: filter.value[1],
-            },
-          );
-
-          countQuery[whereMethod](
-            `${this.tableName}.${String(filter.field)} BETWEEN :${startParam} AND :${endParam}`,
-            {
-              [startParam]: filter.value[0],
-              [endParam]: filter.value[1],
-            },
-          );
+          default:
+            throw new Error(`Unsupported operator: ${String(filter.operator)}`);
         }
       });
     }

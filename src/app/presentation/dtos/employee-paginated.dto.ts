@@ -1,9 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min, IsEnum, IsString } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import {
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+  IsEnum,
+  IsString,
+  IsObject,
+} from 'class-validator';
 import { PaginatedResponseDto } from '@/libs/api/paginated.response.base';
 import { EmployeeResponseDto } from './employee-response.dto';
-import { EmployeeStatus, EmployeePosition } from '@/app/domain/employee';
 
 export class EmployeePaginatedQueryDto {
   @IsOptional()
@@ -53,42 +60,28 @@ export class EmployeePaginatedQueryDto {
   readonly orderDirection?: 'ASC' | 'DESC';
 
   @IsOptional()
-  @IsString()
-  @ApiProperty({
-    example: 'John',
-    description: 'Filter by employee name (partial match)',
-    required: false,
+  @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value) as Record<string, any>;
+      } catch {
+        return value as unknown as Record<string, any>;
+      }
+    }
+    return value as Record<string, any>;
   })
-  readonly name?: string;
-
-  @IsOptional()
-  @IsEnum(EmployeeStatus)
   @ApiProperty({
-    example: EmployeeStatus.ACTIVE,
-    description: 'Filter by employee status',
-    enum: EmployeeStatus,
+    description: 'Strapi-style filters object',
     required: false,
+    example: {
+      name: { $contains: 'John' },
+      status: { $eq: 'ACTIVE' },
+      position: { $in: ['SENIOR', 'MANAGER'] },
+      salary: { $gte: 50000 },
+    },
   })
-  readonly status?: EmployeeStatus;
-
-  @IsOptional()
-  @IsEnum(EmployeePosition)
-  @ApiProperty({
-    example: EmployeePosition.SENIOR,
-    description: 'Filter by employee position',
-    enum: EmployeePosition,
-    required: false,
-  })
-  readonly position?: EmployeePosition;
-
-  @IsOptional()
-  @IsString()
-  @ApiProperty({
-    example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'Filter by department ID',
-    required: false,
-  })
-  readonly departmentId?: string;
+  readonly filters?: Record<string, any>;
 }
 
 export class EmployeePaginatedResponseDto extends PaginatedResponseDto<EmployeeResponseDto> {

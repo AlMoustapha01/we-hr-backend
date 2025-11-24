@@ -1,6 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min, IsEnum, IsString } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import {
+  IsInt,
+  IsOptional,
+  Max,
+  Min,
+  IsEnum,
+  IsString,
+  IsObject,
+} from 'class-validator';
 import { PaginatedResponseDto } from '@/libs/api/paginated.response.base';
 import { DepartmentResponseDto } from './department-response.dto';
 
@@ -51,22 +59,26 @@ export class DepartmentPaginatedQueryDto {
   readonly orderDirection?: 'ASC' | 'DESC';
 
   @IsOptional()
-  @IsString()
-  @ApiProperty({
-    example: 'Engineering',
-    description: 'Filter by department name',
-    required: false,
+  @IsObject()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value) as Record<string, any>;
+      } catch {
+        return value as unknown as Record<string, any>;
+      }
+    }
+    return value as Record<string, any>;
   })
-  readonly name?: string;
-
-  @IsOptional()
-  @IsString()
   @ApiProperty({
-    example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'Filter by manager ID',
+    description: 'Strapi-style filters object',
     required: false,
+    example: {
+      name: { $contains: 'Engineering' },
+      managerId: { $notNull: true },
+    },
   })
-  readonly managerId?: string;
+  readonly filters?: Record<string, any>;
 }
 
 export class DepartmentPaginatedResponseDto extends PaginatedResponseDto<DepartmentResponseDto> {

@@ -29,3 +29,13 @@ export class EmployeeDepartmentNotFoundError extends ExceptionBase {
     super(EmployeeDepartmentNotFoundError.message, cause, metadata);
   }
 }
+
+export class EmployeeAlreadyAssignedError extends ExceptionBase {
+  static readonly message = 'Employee is already assigned to this department';
+
+  public readonly code = 'EMPLOYEE.ALREADY_ASSIGNED';
+
+  constructor(cause?: Error, metadata?: unknown) {
+    super(EmployeeAlreadyAssignedError.message, cause, metadata);
+  }
+}

@@ -15,6 +15,7 @@ import {
   Inject,
   BadRequestException,
 } from '@nestjs/common';
+import { parseFilters } from '@/libs/api/filter.parser';
 import {
   ApiTags,
   ApiOperation,
@@ -49,12 +50,10 @@ import {
 import {
   AssignEmployeeToDepartmentHandler,
   AssignEmployeeToDepartmentCommand,
-  EmployeeAlreadyAssignedError,
 } from '@/app/use-cases/assign-employee-to-department';
 import {
   RetireEmployeeFromDepartmentHandler,
   RetireEmployeeFromDepartmentCommand,
-  AssignmentNotFoundError,
 } from '@/app/use-cases/retire-employee-from-department';
 import { DepartmentRepositoryPort } from '@/app/domain/department.repository.port';
 import { IdResponse } from '@/libs/api/id.response.dto';
@@ -65,8 +64,12 @@ import {
   ManagerNotFoundError,
   EmployeeNotEligibleForManagerError,
   DepartmentNotFoundError,
+  AssignmentNotFoundError,
 } from '@/app/domain/department.errors';
-import { EmployeeNotFoundError } from '@/app/domain/employee.errors';
+import {
+  EmployeeAlreadyAssignedError,
+  EmployeeNotFoundError,
+} from '@/app/domain/employee.errors';
 import { DEPARTMENT_REPOSITORY } from '@/app/app.di-tokens';
 
 @ApiTags('Departments')
@@ -117,6 +120,11 @@ export class DepartmentController {
             message: error.message,
             error: error.code,
           });
+        if (error instanceof EmployeeNotEligibleForManagerError)
+          throw new BadRequestException({
+            message: error.message,
+            error: error.code,
+          });
         throw error;
       },
     });
@@ -157,24 +165,13 @@ export class DepartmentController {
   async findPaginated(
     @Query() query: DepartmentPaginatedQueryDto,
   ): Promise<DepartmentPaginatedResponseDto> {
-    const { limit, page, orderBy, orderDirection, name, managerId } = query;
+    const { limit, page, orderBy, orderDirection, filters } = query;
 
     const filterBy: any[] = [];
 
-    if (name) {
-      filterBy.push({
-        field: 'name',
-        operator: 'EQUALS',
-        value: name,
-      });
-    }
-
-    if (managerId) {
-      filterBy.push({
-        field: 'managerId',
-        operator: 'EQUALS',
-        value: managerId,
-      });
+    if (filters && Object.keys(filters).length > 0) {
+      const parsedFilters = parseFilters(filters);
+      filterBy.push(...parsedFilters);
     }
 
     const params = {
@@ -423,7 +420,7 @@ export class DepartmentController {
         if (error instanceof EmployeeAlreadyAssignedError)
           throw new ConflictHttpException({
             message: error.message,
-            error: 'ASSIGNMENT.ALREADY_EXISTS',
+            error: error.code,
           });
         throw error;
       },
@@ -465,7 +462,7 @@ export class DepartmentController {
         if (error instanceof AssignmentNotFoundError)
           throw new NotFoundException({
             message: error.message,
-            error: 'ASSIGNMENT.NOT_FOUND',
+            error: error.code,
           });
         throw error;
       },

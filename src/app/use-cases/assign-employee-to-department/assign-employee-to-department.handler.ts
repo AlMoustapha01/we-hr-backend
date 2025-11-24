@@ -6,19 +6,15 @@ import { EmployeeAssignmentRepositoryPort } from '@/app/domain/employee-assignme
 import { Err, Ok, Result } from 'oxide.ts';
 import { AggregateID } from '@/libs/domain';
 import { DepartmentNotFoundError } from '@/app/domain/department.errors';
-import { EmployeeNotFoundError } from '@/app/domain/employee.errors';
+import {
+  EmployeeNotFoundError,
+  EmployeeAlreadyAssignedError,
+} from '@/app/domain/employee.errors';
 import {
   DEPARTMENT_REPOSITORY,
   EMPLOYEE_REPOSITORY,
   EMPLOYEE_ASSIGNMENT_REPOSITORY,
 } from '@/app/app.di-tokens';
-
-export class EmployeeAlreadyAssignedError extends Error {
-  constructor() {
-    super('Employee is already assigned to this department');
-    this.name = 'EmployeeAlreadyAssignedError';
-  }
-}
 
 @Injectable()
 export class AssignEmployeeToDepartmentHandler {
